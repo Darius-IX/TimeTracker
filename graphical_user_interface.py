@@ -1,6 +1,8 @@
+import tkinter.messagebox
 from tkinter import *
 from tkinter import ttk
-import handle_json
+from handle_json import *
+import datetime
 
 FONT_SMALL = ("", 20)
 FONT_MEDIUM = ("", 30)
@@ -10,22 +12,54 @@ FONT_LARGE = ("", 40)
 class GraphicalUserInterface:
     def __init__(self):
         self.gui_win = Tk()
-        self.project_names: list = handle_json.get_project_names()
-
-    def get_current_time_passed(self):
-        return 10
+        self.project_names: list = get_project_names()
+        self.start_time = None
+        self.update_time_passed_timer = None
 
     def start_gui(self):
+        def update_time_passed():
+            time_passed = str(datetime.datetime.now() - self.start_time)
+            if not time_passed == "0:00:00":
+                time_passed = time_passed[:time_passed.find(".")]
+            time_passed_value_var.set(time_passed)
+            self.update_time_passed_timer = gw.after(1000, update_time_passed)
+
+        def start_time_tracking():
+            self.start_time = datetime.datetime.now()
+            time_passed_value_var.set(self.start_time.hour)
+            update_time_passed()
+
+        def stop_time_tracking():
+            end_time = datetime.datetime.now()
+            time_passed_precise = str(end_time - self.start_time)
+            time_passed = time_passed_precise[:time_passed_precise.find(".")]
+            total_time_value_var.set(str(time_passed))
+            gw.after_cancel(self.update_time_passed_timer)
+
+            project_name = combo_box.get()
+            notes = notes_entry.get()
+            store_new_entry(project_name, str(self.start_time), str(end_time), str(time_passed_precise), notes)
+
         def start_or_stop(event=None):
             if event:
                 pass
-            if start_stop_button_var.get() == "Start":
+            if start_stop_button_var.get() == "Start":  # pressed start
+                start_time_tracking()
                 start_stop_button_var.set("Stop")
                 return
+            # pressed stop
+            if notes_entry.get() == "":
+                tkinter.messagebox.showerror("Missing Notes", "You have to add notes for your work session")
+                return
+            stop_time_tracking()
             start_stop_button_var.set("Start")
 
         def add_project():
-            pass
+            name = add_project_entry.get()
+            if name.split("/")[0] == "delete":
+                if name.split("/")[1] in []:
+                    pass
+            print("new project:", add_project_entry.get())
 
         def escape_add_project_entry_focus():
             gw.focus()
@@ -44,22 +78,23 @@ class GraphicalUserInterface:
 
         gw = self.gui_win
         gw.title("Time Tracker")
-        gw.minsize(width=500, height=500)
+        gw.geometry("500x550")
+        gw.resizable(0, 0)
 
-        left_side = Frame(gw, padx=10, pady=10, bg="blue")
+        left_side = Frame(gw, padx=10, pady=10)
         left_side.grid(row=1, column=0)
-        col0_left = Frame(left_side, padx=5, pady=5, bg="lightblue")
+        col0_left = Frame(left_side, padx=5, pady=5)
         col0_left.grid(row=2, column=0)
-        col1_left = Frame(left_side, padx=5, pady=5, bg="lightgreen")
+        col1_left = Frame(left_side, padx=5, pady=5)
         col1_left.grid(row=2, column=1)
 
-        bottom = Frame(gw, padx=10, pady=10, bg="red")
+        bottom = Frame(gw, padx=10, pady=10)
         bottom.grid(row=3, column=0, sticky="s")
         bottom.rowconfigure(3, weight=1)
         """bottom.columnconfigure(0, weight=1)
         bottom.columnconfigure(1, weight=1)"""
 
-        """search combobox"""
+        """DropDown for projects"""
         combo_box = ttk.Combobox(gw, values=self.project_names, font=FONT_MEDIUM)
         combo_box.set("Search Project")
         combo_box.grid(row=0, columnspan=2)
@@ -90,6 +125,12 @@ class GraphicalUserInterface:
         add_project_entry.grid(row=1, columnspan=2, sticky="s")
         add_project_button = Button(bottom, text="Add Project", font=FONT_MEDIUM, command=add_project, width=19)
         add_project_button.grid(row=2, columnspan=2, sticky="s", pady=10)
+
+        """Textfield for Notes"""
+        notes_label = Label(bottom, text="Notes:", font=FONT_MEDIUM)
+        notes_label.grid(row=3, columnspan=2, sticky="s")
+        notes_entry = Entry(bottom, font=FONT_MEDIUM)
+        notes_entry.grid(row=4, columnspan=2, sticky="s")
 
         """Bind Hotkeys"""
         gw.bind("<Escape>", escape_add_project_entry_focus)
