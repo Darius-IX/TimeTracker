@@ -2,17 +2,20 @@ import tkinter.font
 import tkinter.messagebox
 from tkinter import *
 from handle_json import *
-import datetime
 
 FONT_SMALL = ("", 20)
 FONT_MEDIUM = ("", 30)
 FONT_LARGE = ("", 40)
+ADD_PROJECT = "Add Project"
+FORBIDDEN_PROJECT_NAMES = ["", "project_info", ADD_PROJECT]
 
 
 class GraphicalUserInterface:
     def __init__(self):
         self.gui_win = Tk()
         self.project_info, self.previous_project = get_project_info_and_previous_project()
+        if self.previous_project == "Add Project" and len(self.project_info) > 0:
+            self.previous_project = list(self.project_info.keys())[0]
         self.start_time = None
         self.update_time_passed_timer = None
 
@@ -39,12 +42,15 @@ class GraphicalUserInterface:
 
         def stop_time_tracking(req_not):
             project_name = project_select_var.get()
-            if project_name == "Add Project":
+            if project_name in FORBIDDEN_PROJECT_NAMES:
                 throw_error("Invalid Name", "Probably forgot to choose project")
+                return
             end_time = datetime.datetime.now()
-            time_passed_precise = str(end_time - self.start_time)
-            time_passed = time_passed_precise[:time_passed_precise.find(".")]
-            total_time_value_var.set(str(time_passed))
+            time_passed_precise = end_time - self.start_time
+            prev_total_duration = string_to_time_delta(self.project_info[project_name]["total_duration"])
+            new_total_duration = prev_total_duration + time_passed_precise
+            self.project_info[project_name]["total_duration"] = str(new_total_duration)
+            total_time_value_var.set(str(new_total_duration).split(".")[0])
             gw.after_cancel(self.update_time_passed_timer)
 
             notes = notes_entry.get()
@@ -53,14 +59,16 @@ class GraphicalUserInterface:
         def start_or_stop(event=None):
             if event:
                 pass
+            selected_project = project_select_var.get()
+            if selected_project in FORBIDDEN_PROJECT_NAMES:
+                return
             if start_stop_button_var.get() == "Start":  # pressed start
                 start_time_tracking()
                 start_stop_button_var.set("Stop")
                 return
-            selected_project = project_select_var.get()
-            requires_notes = True
             # pressed stop
-            if notes_entry.get() == "" and self.project_info[selected_project]:
+            requires_notes = self.project_info[selected_project]["requires_notes"]
+            if notes_entry.get() == "" and requires_notes:
                 result = throw_empty_notes_box()
                 if result is None:  # cancel: write note now
                     return
@@ -74,26 +82,62 @@ class GraphicalUserInterface:
 
         def add_or_remove_project():
             name = add_project_entry.get()
-            if name == "":
+            if name in FORBIDDEN_PROJECT_NAMES:
                 return
             add_or_remove_project_from_json(name)
-            if name in self.project_info.keys():
+            if name in self.project_info:  # remove project
+                if start_stop_button_var.get() == "Stop":
+                    tkinter.messagebox.showerror("Remove", "Cannot remove a project, while the clock is running")
+                    return
+                del self.project_info[name]
+                if len(self.project_info) == 0:
+                    project_select_var.set(ADD_PROJECT)
+                    project_drop_down["menu"].add_command(label=name, command=tkinter._setit(project_select_var, ADD_PROJECT))
+                    add_project_entry.delete(0, "end")
+                    return
                 index = project_drop_down["menu"].index(name)
                 project_drop_down["menu"].delete(index)
-                del self.project_info[name]
-            else:
-                self.project_info[name]["requires_notes"] = True
+                if project_select_var.get() == name:
+                    # print(project_drop_down.keys())
+                    project_select_var.set(list(self.project_info.keys())[0])
+            else:  # add project
+                if project_select_var.get() == "Add Project":
+                    index = project_drop_down["menu"].index("Add Project")
+                    project_drop_down["menu"].delete(index)
+                project_select_var.set(name)
+                self.project_info[name] = {"total_duration": "0:00:00", "requires_notes": True}
                 project_drop_down["menu"].add_command(label=name, command=tkinter._setit(project_select_var, name))
 
             add_project_entry.delete(0, "end")
 
-        def escape_add_project_entry_focus():
+        def escape_add_project_entry_focus(event):
+            if event:
+                pass
             gw.focus()
+
+        def changed_project_selection(project_name):
+            total_time_value_var.set(self.project_info[project_name]["total_duration"].split(".")[0])
+
+        def closing_window():
+            if start_stop_button_var.get() == "Start":
+                gw.destroy()
+                return
+            result = tkinter.messagebox.askyesnocancel("Closing Window", "Close window and save changes?")
+            if result is None:  # cancel: don't close
+                return
+            if result:  # yes: close window and save
+                start_or_stop(None)
+                pass  # just proceed with empty note
+            else:  # no: close window without saving
+                pass
+            gw.destroy()
+            return
 
         gw = self.gui_win
         gw.title("Time Tracker")
         gw.geometry("500x580")
         gw.resizable(0, 0)
+        gw.protocol("WM_DELETE_WINDOW", closing_window)
 
         left_side = Frame(gw, padx=10, pady=10)
         left_side.grid(row=1, column=0)
@@ -111,9 +155,9 @@ class GraphicalUserInterface:
         """DropDown for projects"""
         project_select_var = StringVar(value=self.previous_project)
         if not self.project_info:
-            project_drop_down = OptionMenu(gw, project_select_var, None)
+            project_drop_down = OptionMenu(gw, project_select_var, "Add Project", command=changed_project_selection)
         else:
-            project_drop_down = OptionMenu(gw, project_select_var, *self.project_info.keys())
+            project_drop_down = OptionMenu(gw, project_select_var, *self.project_info.keys(), command=changed_project_selection)
         project_drop_down.grid(row=0, columnspan=2)
         project_drop_down.config(font=FONT_LARGE)
         drop_down_options = project_drop_down["menu"]
@@ -136,7 +180,10 @@ class GraphicalUserInterface:
         """Label total time"""
         total_time_label = Label(col0_left, text="Total Time:", font=FONT_MEDIUM)
         total_time_label.grid(row=3)
-        total_time_value_var = StringVar(value="______")
+        total_duration = "0:00:00"
+        if not project_select_var.get() == "Add Project":
+            total_duration = self.project_info[project_select_var.get()]["total_duration"].split(".")[0]
+        total_time_value_var = StringVar(value=total_duration)
         total_time_value = Label(col1_left, textvariable=total_time_value_var, font=FONT_MEDIUM)
         total_time_value.grid(row=3)
 
