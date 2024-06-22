@@ -81,6 +81,7 @@ class GraphicalUserInterface:
             start_stop_button_var.set("Start")
 
         def add_or_remove_project():
+            gw.focus()
             name = add_project_entry.get()
             if name in FORBIDDEN_PROJECT_NAMES:
                 return
@@ -101,12 +102,15 @@ class GraphicalUserInterface:
                     # print(project_drop_down.keys())
                     project_select_var.set(list(self.project_info.keys())[0])
             else:  # add project
-                if project_select_var.get() == "Add Project":
-                    index = project_drop_down["menu"].index("Add Project")
+                if project_select_var.get() == ADD_PROJECT:
+                    index = project_drop_down["menu"].index(ADD_PROJECT)
                     project_drop_down["menu"].delete(index)
+                tot_dur = str(calc_total_duration_for_projects(name)[name])
                 project_select_var.set(name)
-                self.project_info[name] = {"total_duration": "0:00:00", "requires_notes": True}
+                self.project_info[name] = {"total_duration": tot_dur, "requires_notes": True}
                 project_drop_down["menu"].add_command(label=name, command=tkinter._setit(project_select_var, name))
+                # project_drop_down["menu"].add_command(label=name, command=changed_project_selection)
+                # project_drop_down.bind(changed_project_selection)
 
             add_project_entry.delete(0, "end")
 
@@ -133,11 +137,27 @@ class GraphicalUserInterface:
             gw.destroy()
             return
 
+        def ask_clear_json():
+            mes = "Are you sure you want to clear the JSON file?\n  This will also close the window."
+            if tkinter.messagebox.askokcancel("Clear JSON?", mes):
+                clear_json()
+                gw.destroy()
+
+        def print_info(event):
+            return
+            print(self.project_info)
+
         gw = self.gui_win
         gw.title("Time Tracker")
         gw.geometry("500x580")
         gw.resizable(0, 0)
         gw.protocol("WM_DELETE_WINDOW", closing_window)
+
+        menubar = Menu(gw)
+        menu_options = Menu(menubar, tearoff=0)
+        menubar.add_cascade(label="Options", menu=menu_options)
+        menu_options.add_command(label="Clear JSON", command=ask_clear_json)
+        menu_options.add_command(label="Backup JSON", command=backup_json)
 
         left_side = Frame(gw, padx=10, pady=10)
         left_side.grid(row=1, column=0)
@@ -203,6 +223,8 @@ class GraphicalUserInterface:
         """Bind Hotkeys"""
         gw.bind("<Escape>", escape_add_project_entry_focus)
         gw.bind("<Return>", start_or_stop)
+        gw.bind("<i>", print_info)
 
+        gw.config(menu=menubar)
         if gw:
             gw.mainloop()

@@ -91,7 +91,24 @@ def string_to_time_delta(duration: str) -> datetime.timedelta:
     return datetime.timedelta(hours=h, minutes=mn, seconds=sec)
 
 
+def calc_total_duration_for_projects(projects: list[str]) -> dict[str: datetime.timedelta]:
+    with open("time_tracker_times.json", "r") as json_file:
+        try:
+            data = json.load(json_file)
+        except Exception as exc:
+            print(exc)
+            return
+        total_durations = {p: datetime.timedelta(seconds=0) for p in projects}
+        for project in projects:
+            if project not in data:
+                continue
+            durations = [string_to_time_delta(data[project][entry]["duration"]) for entry in data[project]]
+            for duration in durations:
+                total_durations[project] += duration
+        return total_durations
+
+
 if __name__ == '__main__':
     pass
-    clear_json()
+    # clear_json()
     # backup_json()
