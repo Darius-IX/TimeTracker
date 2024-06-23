@@ -105,7 +105,7 @@ class GraphicalUserInterface:
                 if project_select_var.get() == ADD_PROJECT:
                     index = project_drop_down["menu"].index(ADD_PROJECT)
                     project_drop_down["menu"].delete(index)
-                tot_dur = str(calc_total_duration_for_projects(name)[name])
+                tot_dur = str(calc_total_duration_for_projects([name])[name])
                 project_select_var.set(name)
                 self.project_info[name] = {"total_duration": tot_dur, "requires_notes": True}
                 project_drop_down["menu"].add_command(label=name, command=tkinter._setit(project_select_var, name))

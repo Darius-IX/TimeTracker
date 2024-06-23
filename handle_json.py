@@ -1,10 +1,15 @@
 import json
 import datetime
 import shutil
+import os
+FILE_NAME: str = "time_tracker_times.json"
 
 
 def get_project_info_and_previous_project() -> (dict[str: bool], str):
-    with open("time_tracker_times.json", "r") as json_file:
+    if not os.path.isfile(FILE_NAME):
+        with open(FILE_NAME, "x"):
+            pass
+    with open(FILE_NAME, "r") as json_file:
         try:
             data = json.load(json_file)
         except Exception as exc:
@@ -25,7 +30,7 @@ def get_project_info_and_previous_project() -> (dict[str: bool], str):
 
 
 def store_new_entry(project_name: str, start_time: str, end_time: str, duration: str, notes: str, req_not: bool) -> None:
-    with open("time_tracker_times.json", "r") as json_file:
+    with open(FILE_NAME, "r") as json_file:
         try:
             data = json.load(json_file)
         except Exception as exc:
@@ -33,7 +38,7 @@ def store_new_entry(project_name: str, start_time: str, end_time: str, duration:
             print(exc)
             return
         total_duration = data["project_info"][project_name]["total_duration"]
-    with open("time_tracker_times.json", "w") as json_file:
+    with open(FILE_NAME, "w") as json_file:
         if project_name not in data.keys():
             data[project_name] = {}
         data[project_name][start_time] = {
@@ -53,7 +58,7 @@ def store_new_entry(project_name: str, start_time: str, end_time: str, duration:
 
 
 def add_or_remove_project_from_json(project_name: str) -> None:
-    with open("time_tracker_times.json", "r") as json_file:
+    with open(FILE_NAME, "r") as json_file:
         try:
             data = json.load(json_file)
         except Exception as exc:
@@ -68,13 +73,13 @@ def add_or_remove_project_from_json(project_name: str) -> None:
         else:
             data["project_info"][project_name] = {"total_duration": "0:00:00", "requires_notes": True}
 
-    with open("time_tracker_times.json", "w") as json_file:
+    with open(FILE_NAME, "w") as json_file:
         as_json = json.dumps(data, indent=4)
         json_file.write(as_json)
 
 
 def clear_json():
-    with open("time_tracker_times.json", "w") as json_file:
+    with open(FILE_NAME, "w") as json_file:
         json_file.truncate()
 
 
@@ -82,7 +87,7 @@ def backup_json():
     date = str(datetime.datetime.now())
     # format 2024-06-19 19:58:44.888948 to 2024_06_19__19_58_44
     date = date.replace("-", "_").replace(" ", "__").replace(":", "_").split(".")[0]
-    shutil.copy2("time_tracker_times.json", f"backup_ttt_{date}.json")
+    shutil.copy2(FILE_NAME, f"backup_ttt_{date}.json")
 
 
 def string_to_time_delta(duration: str) -> datetime.timedelta:
@@ -92,7 +97,7 @@ def string_to_time_delta(duration: str) -> datetime.timedelta:
 
 
 def calc_total_duration_for_projects(projects: list[str]) -> dict[str: datetime.timedelta]:
-    with open("time_tracker_times.json", "r") as json_file:
+    with open(FILE_NAME, "r") as json_file:
         try:
             data = json.load(json_file)
         except Exception as exc:
@@ -106,6 +111,9 @@ def calc_total_duration_for_projects(projects: list[str]) -> dict[str: datetime.
             for duration in durations:
                 total_durations[project] += duration
         return total_durations
+
+
+
 
 
 if __name__ == '__main__':
