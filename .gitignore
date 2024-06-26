@@ -1,1 +1,3 @@
-time_tracker_times.json
+*.json
+auto_completion_test.py
+s_o_test.py
