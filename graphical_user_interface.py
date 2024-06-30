@@ -54,6 +54,7 @@ class GraphicalUserInterface:
             gw.after_cancel(self.update_time_passed_timer)
 
             notes = notes_entry.get()
+            notes_entry.delete(0, "end")
             store_new_entry(project_name, str(self.start_time), str(end_time), str(time_passed_precise), notes, req_not)
 
         def start_or_stop(event=None):
@@ -67,6 +68,7 @@ class GraphicalUserInterface:
                 start_stop_button_var.set("Stop")
                 return
             # pressed stop
+            # TODO move to stop timetracking or own function
             requires_notes = self.project_info[selected_project]["requires_notes"]
             if notes_entry.get() == "" and requires_notes:
                 result = throw_empty_notes_box()
@@ -147,10 +149,11 @@ class GraphicalUserInterface:
             return
             print(self.project_info)
 
+        # TODO GUI marker
         gw = self.gui_win
         gw.title("Time Tracker")
-        gw.geometry("500x580")
-        gw.resizable(0, 0)
+        gw.geometry("500x680")
+        # gw.minsize(width=520, height=None)
         gw.protocol("WM_DELETE_WINDOW", closing_window)
 
         menubar = Menu(gw)
@@ -159,66 +162,62 @@ class GraphicalUserInterface:
         menu_options.add_command(label="Clear JSON", command=ask_clear_json)
         menu_options.add_command(label="Backup JSON", command=backup_json)
 
-        left_side = Frame(gw, padx=10, pady=10)
-        left_side.grid(row=1, column=0)
-        col0_left = Frame(left_side, padx=5, pady=5)
-        col0_left.grid(row=2, column=0)
-        col1_left = Frame(left_side, padx=5, pady=5)
-        col1_left.grid(row=2, column=1)
-
-        bottom = Frame(gw, padx=10, pady=10)
-        bottom.grid(row=3, column=0, sticky="s")
-        bottom.rowconfigure(3, weight=1)
-        """bottom.columnconfigure(0, weight=1)
-        bottom.columnconfigure(1, weight=1)"""
+        top_frame = Frame(gw)
+        top_frame.pack(padx=10, pady=10, side="top", fill="x")
+        bottom_frame = Frame(gw)
+        bottom_frame.pack(padx=10, pady=10, side="bottom", fill="x")
 
         """DropDown for projects"""
         project_select_var = StringVar(value=self.previous_project)
         if not self.project_info:
-            project_drop_down = OptionMenu(gw, project_select_var, "Add Project", command=changed_project_selection)
+            project_drop_down = OptionMenu(top_frame, project_select_var, "Add Project", command=changed_project_selection)
         else:
-            project_drop_down = OptionMenu(gw, project_select_var, *self.project_info.keys(), command=changed_project_selection)
-        project_drop_down.grid(row=0, columnspan=2)
+            project_drop_down = OptionMenu(top_frame, project_select_var, *self.project_info.keys(), command=changed_project_selection)
         project_drop_down.config(font=FONT_LARGE)
         drop_down_options = project_drop_down["menu"]
         drop_down_options.config(font=FONT_MEDIUM)
+        project_drop_down.pack(fill="x", pady=10)
 
         """Button for Start/Stop"""
         start_stop_button_var = StringVar(value="Start")
-        start_stop_button = Button(
-            left_side, textvariable=start_stop_button_var, command=start_or_stop, font=FONT_LARGE, width=15
-        )
-        start_stop_button.grid(row=1, columnspan=2)
+        start_stop_button = Button(top_frame, textvariable=start_stop_button_var, command=start_or_stop, font=FONT_LARGE)
+        start_stop_button.pack(fill="x", pady=10)
 
+        time_frame = Frame(top_frame)
+        time_frame.pack(side="top", padx=20, pady=10)
+        time_labels_frame = Frame(time_frame)
+        time_labels_frame.pack(side="left", padx=10)
+        time_values_frame = Frame(time_frame)
+        time_values_frame.pack(side="left", padx=10)
         """Label current time"""
-        time_passed_label = Label(col0_left, text="Time Passed:", font=FONT_MEDIUM)
-        time_passed_label.grid(row=2)
+        time_passed_label = Label(time_labels_frame, text="Time Passed:", font=FONT_MEDIUM)
+        time_passed_label.pack()
         time_passed_value_var = StringVar(value="______")
-        time_passed_value = Label(col1_left, textvariable=time_passed_value_var, font=FONT_MEDIUM)
-        time_passed_value.grid(row=2)
+        time_passed_value = Label(time_values_frame, textvariable=time_passed_value_var, font=FONT_MEDIUM)
+        time_passed_value.pack()
 
         """Label total time"""
-        total_time_label = Label(col0_left, text="Total Time:", font=FONT_MEDIUM)
-        total_time_label.grid(row=3)
+        total_time_label = Label(time_labels_frame, text="Total Time:", font=FONT_MEDIUM)
+        total_time_label.pack()
         total_duration = "0:00:00"
         if not project_select_var.get() == "Add Project":
             total_duration = self.project_info[project_select_var.get()]["total_duration"].split(".")[0]
         total_time_value_var = StringVar(value=total_duration)
-        total_time_value = Label(col1_left, textvariable=total_time_value_var, font=FONT_MEDIUM)
-        total_time_value.grid(row=3)
+        total_time_value = Label(time_values_frame, textvariable=total_time_value_var, font=FONT_MEDIUM)
+        total_time_value.pack()
 
         """Textfield for Notes"""
-        notes_label = Label(bottom, text="Notes:", font=FONT_MEDIUM)
-        notes_label.grid(row=1, columnspan=2, sticky="s")
-        notes_entry = Entry(bottom, font=FONT_MEDIUM)
-        notes_entry.grid(row=2, columnspan=2, sticky="s")
+        notes_label = Label(top_frame, text="Notes:", font=FONT_MEDIUM)
+        notes_label.pack(fill="x")
+        notes_entry = Entry(top_frame, font=FONT_MEDIUM)
+        notes_entry.pack(fill="x")
 
         """Textfield for add/remove project"""
-        add_project_entry = Entry(bottom, font=FONT_MEDIUM)
-        add_project_entry.grid(row=4, columnspan=2, sticky="s")
-        add_project_button = Button(bottom, text="Add or Remove Project:", font=FONT_MEDIUM,
+        add_project_button = Button(bottom_frame, text="Add or Remove Project:", font=FONT_MEDIUM,
                                     command=add_or_remove_project, width=19)
-        add_project_button.grid(row=3, columnspan=2, sticky="s", pady=5)
+        add_project_button.pack(fill="x", pady=10)
+        add_project_entry = Entry(bottom_frame, font=FONT_MEDIUM)
+        add_project_entry.pack(fill="x", pady=10)
 
         """Bind Hotkeys"""
         gw.bind("<Escape>", escape_add_project_entry_focus)
