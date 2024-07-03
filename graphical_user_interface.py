@@ -18,6 +18,7 @@ class GraphicalUserInterface:
             self.previous_project = list(self.project_info.keys())[0]
         self.start_time = None
         self.update_time_passed_timer = None
+        self.project_drop_down = None
 
     def start_gui(self):
         def throw_error(title: str, message: str):
@@ -95,24 +96,28 @@ class GraphicalUserInterface:
                 del self.project_info[name]
                 if len(self.project_info) == 0:
                     project_select_var.set(ADD_PROJECT)
-                    project_drop_down["menu"].add_command(label=name, command=tkinter._setit(project_select_var, ADD_PROJECT))
+                    self.project_drop_down["menu"].add_command(label=name, command=tkinter._setit(project_select_var, ADD_PROJECT))
                     add_project_entry.delete(0, "end")
                     return
-                index = project_drop_down["menu"].index(name)
-                project_drop_down["menu"].delete(index)
+                index = self.project_drop_down["menu"].index(name)
+                self.project_drop_down["menu"].delete(index)
                 if project_select_var.get() == name:
                     # print(project_drop_down.keys())
                     project_select_var.set(list(self.project_info.keys())[0])
             else:  # add project
                 if project_select_var.get() == ADD_PROJECT:
-                    index = project_drop_down["menu"].index(ADD_PROJECT)
-                    project_drop_down["menu"].delete(index)
+                    index = self.project_drop_down["menu"].index(ADD_PROJECT)
+                    self.project_drop_down["menu"].delete(index)
                 tot_dur = str(calc_total_duration_for_projects([name])[name])
-                project_select_var.set(name)
                 self.project_info[name] = {"total_duration": tot_dur, "requires_notes": True}
-                project_drop_down["menu"].add_command(label=name, command=tkinter._setit(project_select_var, name))
-                # project_drop_down["menu"].add_command(label=name, command=changed_project_selection)
-                # project_drop_down.bind(changed_project_selection)
+                self.project_drop_down.destroy()
+                project_select_var.set(name)
+                self.project_drop_down = OptionMenu(project_drop_down_frame, project_select_var,
+                                                    *self.project_info.keys(), command=changed_project_selection)
+                self.project_drop_down.config(font=FONT_LARGE)
+                new_drop_down_options = self.project_drop_down["menu"]
+                new_drop_down_options.config(font=FONT_MEDIUM)
+                self.project_drop_down.pack(fill="x", pady=10)
 
             add_project_entry.delete(0, "end")
 
@@ -166,17 +171,21 @@ class GraphicalUserInterface:
         top_frame.pack(padx=10, pady=10, side="top", fill="x")
         bottom_frame = Frame(gw)
         bottom_frame.pack(padx=10, pady=10, side="bottom", fill="x")
+        project_drop_down_frame = Frame(top_frame)
+        project_drop_down_frame.pack()
 
         """DropDown for projects"""
         project_select_var = StringVar(value=self.previous_project)
         if not self.project_info:
-            project_drop_down = OptionMenu(top_frame, project_select_var, "Add Project", command=changed_project_selection)
+            self.project_drop_down = OptionMenu(project_drop_down_frame, project_select_var,
+                                                "Add Project", command=changed_project_selection)
         else:
-            project_drop_down = OptionMenu(top_frame, project_select_var, *self.project_info.keys(), command=changed_project_selection)
-        project_drop_down.config(font=FONT_LARGE)
-        drop_down_options = project_drop_down["menu"]
+            self.project_drop_down = OptionMenu(project_drop_down_frame, project_select_var,
+                                                *self.project_info.keys(), command=changed_project_selection)
+        self.project_drop_down.config(font=FONT_LARGE)
+        drop_down_options = self.project_drop_down["menu"]
         drop_down_options.config(font=FONT_MEDIUM)
-        project_drop_down.pack(fill="x", pady=10)
+        self.project_drop_down.pack(fill="x", pady=10)
 
         """Button for Start/Stop"""
         start_stop_button_var = StringVar(value="Start")
