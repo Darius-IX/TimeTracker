@@ -107,6 +107,8 @@ def calc_total_duration_for_projects(projects: list[str]) -> dict[str: datetime.
         except Exception as exc:
             print(exc)
             return
+        if not projects:
+            projects = list([key for key in data.keys() if key not in ["previous_project", "project_info"]])
         total_durations = {p: datetime.timedelta(seconds=0) for p in projects}
         for project in projects:
             if project not in data:
@@ -115,6 +117,22 @@ def calc_total_duration_for_projects(projects: list[str]) -> dict[str: datetime.
             for duration in durations:
                 total_durations[project] += duration
         return total_durations
+
+
+def write_total_durations_of_projects():
+    # TODO recalc duration of session by start and end time
+    calculated_total_durations = calc_total_duration_for_projects([])
+    with open(FILE_NAME, "r") as json_file:
+        try:
+            data = json.load(json_file)
+        except Exception as exc:
+            print(exc)
+            return
+    for project, total_duration in calculated_total_durations.items():
+        data["project_info"][project]["total_duration"] = str(total_duration)
+    with open(FILE_NAME, "w") as json_file:
+        as_json = json.dumps(data, indent=4)
+        json_file.write(as_json)
 
 
 if __name__ == '__main__':

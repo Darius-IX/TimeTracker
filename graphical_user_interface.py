@@ -109,6 +109,7 @@ class GraphicalUserInterface:
                     index = self.project_drop_down["menu"].index(ADD_PROJECT)
                     self.project_drop_down["menu"].delete(index)
                 tot_dur = str(calc_total_duration_for_projects([name])[name])
+                total_time_value_var.set(tot_dur.split(".")[0])
                 self.project_info[name] = {"total_duration": tot_dur, "requires_notes": True}
                 self.project_drop_down.destroy()
                 project_select_var.set(name)
@@ -150,6 +151,9 @@ class GraphicalUserInterface:
                 clear_json()
                 gw.destroy()
 
+        def recalculate_total_durations():
+            write_total_durations_of_projects()
+
         def print_info(event):
             return
             print(self.project_info)
@@ -166,6 +170,7 @@ class GraphicalUserInterface:
         menubar.add_cascade(label="Options", menu=menu_options)
         menu_options.add_command(label="Clear JSON", command=ask_clear_json)
         menu_options.add_command(label="Backup JSON", command=backup_json)
+        menu_options.add_command(label="Recalc", command=recalculate_total_durations)
 
         top_frame = Frame(gw)
         top_frame.pack(padx=10, pady=10, side="top", fill="x")
