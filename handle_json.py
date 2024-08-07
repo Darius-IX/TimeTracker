@@ -91,9 +91,13 @@ def backup_json():
 
 
 def string_to_time_delta(duration: str) -> datetime.timedelta:
-    h, mn, sec = duration.split(":")
+    duration_split = duration.split(" ")
+    days = 0
+    if len(duration_split) > 1:
+        days = float(duration_split[0])
+    h, mn, sec = duration_split[-1].split(":")
     h, mn, sec = float(h), float(mn), float(sec)
-    return datetime.timedelta(hours=h, minutes=mn, seconds=sec)
+    return datetime.timedelta(days=days, hours=h, minutes=mn, seconds=sec)
 
 
 def calc_total_duration_for_projects(projects: list[str]) -> dict[str: datetime.timedelta]:
@@ -111,9 +115,6 @@ def calc_total_duration_for_projects(projects: list[str]) -> dict[str: datetime.
             for duration in durations:
                 total_durations[project] += duration
         return total_durations
-
-
-
 
 
 if __name__ == '__main__':
