@@ -1,0 +1,46 @@
+{
+    "project_info": {
+        "a": {
+            "total_duration": "0:00:24.837528",
+            "requires_notes": false
+        },
+        "c": {
+            "total_duration": "0:00:00",
+            "requires_notes": true
+        },
+        "d": {
+            "total_duration": "0:00:00",
+            "requires_notes": true
+        },
+        "b": {
+            "total_duration": "0:03:01.207005",
+            "requires_notes": true
+        }
+    },
+    "a": {
+        "2024-08-08 00:08:31.138852": {
+            "end_time": "2024-08-08 00:08:42.491634",
+            "duration": "0:00:11.352782",
+            "notes": ""
+        },
+        "2024-08-08 00:08:47.531989": {
+            "end_time": "2024-08-08 00:09:01.016735",
+            "duration": "0:00:13.484746",
+            "notes": "add b"
+        }
+    },
+    "previous_project": "b",
+    "b": {
+        "2024-08-08 00:08:47.531989": {
+            "end_time": "2024-08-08 00:09:01.016735",
+            "duration": "0:00:13.484746",
+            "notes": "add b"
+        },
+        "2024-08-25 22:38:25.137006": {
+            "end_time": "2024-08-25 22:41:26.344011",
+            "duration": "0:03:01.207005",
+            "notes": ""
+        }
+    },
+    "reminder_time": 30
+}

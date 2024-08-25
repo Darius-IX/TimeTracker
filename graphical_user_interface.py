@@ -7,18 +7,19 @@ FONT_SMALL = ("", 20)
 FONT_MEDIUM = ("", 30)
 FONT_LARGE = ("", 40)
 ADD_PROJECT = "Add Project"
-FORBIDDEN_PROJECT_NAMES = ["", "project_info", ADD_PROJECT]
+FORBIDDEN_PROJECT_NAMES = ["", "project_info", ADD_PROJECT, "reminder_time"]
 
 
 class GraphicalUserInterface:
     def __init__(self):
         self.gui_win = Tk()
-        self.project_info, self.previous_project = get_project_info_and_previous_project()
+        self.project_info, self.previous_project, self.reminder_interval_time_minutes = get_project_info_previous_project_and_reminder_time()
         if self.previous_project == "Add Project" and len(self.project_info) > 0:
             self.previous_project = list(self.project_info.keys())[0]
         self.start_time = None
         self.update_time_passed_timer = None
         self.project_drop_down = None
+        self.reminder_timer = None
 
     def start_gui(self):
         def throw_error(title: str, message: str):
@@ -28,6 +29,16 @@ class GraphicalUserInterface:
             return tkinter.messagebox.askyesnocancel("Empty Notes", "Yes: leave empty; ask again\n"
                                                                     "No: leave empty, don't ask again\n"
                                                                     "Cancel: Write Note now")
+
+        def run_reminder_timer():
+            if self.reminder_interval_time_minutes == -1:
+                if self.reminder_timer is None:
+                    return
+                self.gui_win.after_cancel(self.reminder_timer)
+            if self.reminder_timer:
+                throw_error("Reminder", f"{self.reminder_interval_time_minutes} minutes passed")
+            timer_msec = self.reminder_interval_time_minutes * 1000 * 60
+            self.reminder_timer = gw.after(timer_msec, run_reminder_timer)
 
         def update_time_passed():
             time_passed = str(datetime.datetime.now() - self.start_time)
@@ -40,6 +51,7 @@ class GraphicalUserInterface:
             self.start_time = datetime.datetime.now()
             time_passed_value_var.set(self.start_time.hour)
             update_time_passed()
+            run_reminder_timer()
 
         def stop_time_tracking(req_not):
             project_name = project_select_var.get()
@@ -53,6 +65,7 @@ class GraphicalUserInterface:
             self.project_info[project_name]["total_duration"] = str(new_total_duration)
             total_time_value_var.set(str(new_total_duration).split(".")[0])
             gw.after_cancel(self.update_time_passed_timer)
+            gw.after_cancel(self.reminder_timer)
 
             notes = notes_entry.get()
             notes_entry.delete(0, "end")
@@ -154,6 +167,10 @@ class GraphicalUserInterface:
         def recalculate_total_durations():
             write_total_durations_of_projects()
 
+        def set_reminder_time(reminder_minutes):
+            self.reminder_interval_time_minutes = reminder_minutes
+            store_reminder_time(reminder_minutes)
+
         def print_info(event):
             return
             print(self.project_info)
@@ -171,6 +188,16 @@ class GraphicalUserInterface:
         menu_options.add_command(label="Clear JSON", command=ask_clear_json)
         menu_options.add_command(label="Backup JSON", command=backup_json)
         menu_options.add_command(label="Recalc", command=recalculate_total_durations)
+        """Timer Options"""
+        reminder_submenu = Menu(menu_options, tearoff=0)
+        reminder_submenu.add_command(label="Off", command=lambda: set_reminder_time(-1))
+        reminder_submenu.add_command(label="15 min", command=lambda: set_reminder_time(15))
+        reminder_submenu.add_command(label="30 min", command=lambda: set_reminder_time(30))
+        reminder_submenu.add_command(label="60 min", command=lambda: set_reminder_time(60))
+        reminder_submenu.add_command(label="90 min", command=lambda: set_reminder_time(90))
+        reminder_submenu.add_command(label="120 min", command=lambda: set_reminder_time(120))
+        menu_options.add_cascade(label="Reminder", menu=reminder_submenu)
+
 
         top_frame = Frame(gw)
         top_frame.pack(padx=10, pady=10, side="top", fill="x")

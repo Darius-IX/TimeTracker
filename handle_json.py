@@ -5,7 +5,7 @@ import os
 FILE_NAME: str = "time_tracker_times.json"
 
 
-def get_project_info_and_previous_project() -> (dict[str: bool], str):
+def get_project_info_previous_project_and_reminder_time() -> tuple[dict[str: bool], str, int]:
     if not os.path.isfile(FILE_NAME):
         with open(FILE_NAME, "x"):
             pass
@@ -18,7 +18,8 @@ def get_project_info_and_previous_project() -> (dict[str: bool], str):
                 pass
             data = {
                 "project_info": {},
-                "previous_project": "Add Project"
+                "previous_project": "Add Project",
+                "reminder_time": -1
             }
         project_info = {}
         if "project_info" in data.keys():
@@ -26,7 +27,10 @@ def get_project_info_and_previous_project() -> (dict[str: bool], str):
         previous_project = "Add Project"
         if "previous_project" in data.keys():
             previous_project = data["previous_project"]
-        return project_info, previous_project
+        reminder_time = -1
+        if "reminder_time" in data.keys():
+            reminder_time = data["reminder_time"]
+        return project_info, previous_project, reminder_time
 
 
 def store_new_entry(project_name: str, start_time: str, end_time: str, duration: str, notes: str, req_not: bool) -> None:
@@ -55,6 +59,23 @@ def store_new_entry(project_name: str, start_time: str, end_time: str, duration:
         json_file.write(as_json)
 
     print("write successful")
+
+
+def store_reminder_time(reminder_minutes: int) -> None:
+    with open(FILE_NAME, "r") as json_file:
+        try:
+            data = json.load(json_file)
+        except Exception as exc:
+            # file is empty (or other error which cleans the file now :))
+            if exc:
+                pass
+            data = {}
+        data["reminder_time"] = reminder_minutes
+
+    with open(FILE_NAME, "w") as json_file:
+        as_json = json.dumps(data, indent=4)
+        json_file.write(as_json)
+
 
 
 def add_or_remove_project_from_json(project_name: str) -> None:
